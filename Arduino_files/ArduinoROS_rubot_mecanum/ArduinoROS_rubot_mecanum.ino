@@ -1,4 +1,3 @@
-
 #include <ros.h>
 #include <ros/time.h>
 #include <tf/tf.h>
@@ -17,7 +16,7 @@
 //#define HDW_DEBUG  //aquesta opcio es per provar que envia correctament pel port serie les dades de la IMU i dels encodes, despres s'ha de desactivar  amb //
 
 #if !defined(HDW_DEBUG)
-ros::NodeHandle_<ArduinoHardware, 5, 5, 512, 1024> nh;
+ros::NodeHandle nh;
 tf::TransformBroadcaster broadcaster;
 
 
@@ -113,7 +112,7 @@ void setup()
 //  Imu.SetupDevice();
   #if !defined(HDW_DEBUG)
   nh.initNode();
-  //broadcaster.init(nh);
+  broadcaster.init(nh);
   nh.subscribe(sub);
   nh.subscribe(resub);
   nh.advertise(odom_pub);
@@ -176,9 +175,9 @@ Serial.println(gz);
   odom.pose.pose.orientation =tf::createQuaternionFromYaw(theta);;
 
   odom.child_frame_id = "base_link";
-  odom.twist.twist.linear.x = vxi;
-  odom.twist.twist.linear.y = vyi;
-  odom.twist.twist.angular.z = omegai;
+  //odom.twist.twist.linear.x = vxi;
+  //odom.twist.twist.linear.y = vyi;
+  //odom.twist.twist.angular.z = omegai;
 
   odom_pub.publish(&odom);
 
