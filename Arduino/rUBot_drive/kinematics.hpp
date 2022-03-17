@@ -19,10 +19,10 @@ int speed2pwm(float spd){
 
 //wABCD m/s
 void InverseKinematic(float vx,float vy,float omega, float &pwmA,float &pwmB,float &pwmC,float &pwmD){
-  pwmA=speed2pwm((vx+vy-K*omega)); 
-  pwmB=speed2pwm(vx-vy+K*omega); 
-  pwmC=speed2pwm(vx-vy-K*omega);
-  pwmD=speed2pwm(vx+vy+K*omega); 
+  pwmA=speed2pwm((vx-vy-K*omega)); 
+  pwmB=speed2pwm(vx+vy+K*omega); 
+  pwmC=speed2pwm(vx+vy-K*omega);
+  pwmD=speed2pwm(vx-vy+K*omega); 
 //  SERIAL.print(pwmA);
 //  SERIAL.print("  :   ");
 //  SERIAL.print(pwmB);
