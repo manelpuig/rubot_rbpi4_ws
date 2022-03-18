@@ -26,7 +26,7 @@ def move_rubot(lin_velx,lin_vely,ang_vel,distance):
     global robot_x
     global robot_y
     global robot_f
-    pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
+    pub = rospy.Publisher('/cmd_vel', Twist, queue_size=1)# minimum buffer size
     rospy.Subscriber('/odom',Odometry, odom_callback)
     rate = rospy.Rate(10) # 10hz
     vel = Twist()
@@ -46,6 +46,7 @@ def move_rubot(lin_velx,lin_vely,ang_vel,distance):
             vel.linear.y = 0
             vel.angular.z = 0
             pub.publish(vel)
+            rospy.sleep(1)# sleeps for 1 second
             break
         pub.publish(vel)
         rate.sleep()
