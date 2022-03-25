@@ -18,39 +18,41 @@ def odom_callback(data):
     (roll, pitch, yaw)=euler_from_quaternion(q)
     rospy.loginfo("Robot Odometry x= %f\n",robot_x)
     rospy.loginfo("Robot Odometry y= %f\n",robot_y)
-    rospy.loginfo("Robot Odometry roll= %.0f\n",math.degrees(roll))
-    rospy.loginfo("Robot Odometry pitch= %.0f\n",math.degrees(pitch))
     rospy.loginfo("Robot Odometry yaw= %.0f\n",math.degrees(yaw))
 	
 def move_rubot(lin_velx,lin_vely,ang_vel,distance):
     global robot_x
     global robot_y
     global robot_f
-    pub = rospy.Publisher('/cmd_vel', Twist, queue_size=1)# minimum buffer size
+    pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
     rospy.Subscriber('/odom',Odometry, odom_callback)
     rate = rospy.Rate(10) # 10hz
     vel = Twist()
     while not rospy.is_shutdown():
-        vel.linear.x = lin_velx
-        vel.linear.y = lin_vely
-        vel.linear.z = 0
-        vel.angular.x = 0
-        vel.angular.y = 0
-        vel.angular.z = ang_vel
-        rospy.loginfo("Linear Vel_x = %f: Linear Vel_y = %f: Angular Vel = %f",lin_velx,lin_vely,ang_vel)
-
-        if(robot_y >= distance):
-            rospy.loginfo("Robot Reached destination")
-            rospy.logwarn("Stopping robot")
-            vel.linear.x = 0
-            vel.linear.y = 0
-            vel.angular.z = 0
+        vel.linear.x = 0.0
+        vel.linear.y = 0.0
+        vel.linear.z = 0.0
+        vel.angular.x = 0.0
+        vel.angular.y = 0.0
+        vel.angular.z = 0.0
+        
+        if(robot_x <= distance):
+            rospy.loginfo("Robot running")
+            rospy.loginfo("Linear Vel_x = %f: Linear Vel_y = %f: Angular Vel = %f",lin_velx,lin_vely,ang_vel)
+            vel.linear.x = lin_velx
+            vel.linear.y = lin_vely
+            vel.angular.z = ang_vel
             pub.publish(vel)
-            rospy.sleep(1)# sleeps for 1 second
-            break
-        pub.publish(vel)
-        rate.sleep()
-
+            rate.sleep()
+        else:
+            rospy.logwarn("Stopping robot")
+            vel.linear.x = 0.0
+            vel.linear.y = 0.0
+            vel.angular.z = 0.0
+            pub.publish(vel)
+            rate.sleep()
+    rospy.spin()
+    
 if __name__ == '__main__':
     try:
         rospy.init_node('rubot_nav', anonymous=False)

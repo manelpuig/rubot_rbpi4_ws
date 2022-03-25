@@ -6,8 +6,6 @@
 #include <geometry_msgs/Twist.h>
 #include <nav_msgs/Odometry.h>
 #include<std_msgs/Bool.h>
-//#include <WinsenZE03.h>
-//WinsenZE03 sensor;  // sensor de ozo
 #include"encoder.h"
 #include"kinematics.hpp"
 #include"motor.h"
@@ -18,11 +16,7 @@
 
 #if !defined(HDW_DEBUG)
 ros::NodeHandle nh;
-//ros::NodeHandle_<ArduinoHardware, 5, 5, 512, 1024> nh;
-//ros::NodeHandle_<ArduinoHardware, 5, 5, 1024, 1024, FlashReadOutBuffer_> nh;
 tf::TransformBroadcaster broadcaster;
-
-
 #endif
 
 float ctrlrate=1.0;
@@ -101,17 +95,14 @@ void setup()
  digitalWrite(3, LOW);
  digitalWrite(4, LOW);
  digitalWrite(5, LOW);
-
- 
-  Serial3.begin(9600);
-  //sensor.begin(&Serial3, CO);
-  //sensor.setAs(QA);
  #endif
+
 	IO_init();
   PIDA.init();
   PIDB.init();
   PIDC.init();
   PIDD.init();
+
 //  Imu.SetupDevice();
   #if !defined(HDW_DEBUG)
   nh.initNode();
@@ -136,59 +127,48 @@ void loop(){
   theta+=omegai*dt;
   if(theta > 3.14)
     theta=-3.14;
-//                        TODO IMU
- Imu.getGyro(gx,gy,gz);
-Imu.getAcc(ax,ay,az);
-#if defined(HDW_DEBUG)
-Serial.print("ACC:  x: ");
-Serial.print(ax);
-Serial.print(" y: ");
-Serial.print(ay);
-Serial.print(" z: ");
-Serial.println(az);
-
-Serial.print("GRYO:  x: ");
-Serial.print(gx);
-Serial.print(" y: ");
-Serial.print(gy);
-Serial.print(" z: ");
-Serial.println(gz);
-
-#endif
+  //                        TODO IMU
+  Imu.getGyro(gx,gy,gz);
+  Imu.getAcc(ax,ay,az);
+  #if defined(HDW_DEBUG)
+    Serial.print("ACC:  x: ");
+    Serial.print(ax);
+    Serial.print(" y: ");
+    Serial.print(ay);
+    Serial.print(" z: ");
+    Serial.println(az);
+    Serial.print("GRYO:  x: ");
+    Serial.print(gx);
+    Serial.print(" y: ");
+    Serial.print(gy);
+    Serial.print(" z: ");
+    Serial.println(gz);
+  #endif
 
   #if !defined(HDW_DEBUG)
+    t.header.stamp = nh.now();
+    t.header.frame_id = "odom";
+    t.child_frame_id = "base_footprint";
+    t.transform.translation.x = x;
+    t.transform.translation.y = y;
+    t.transform.rotation = tf::createQuaternionFromYaw(theta);
+    broadcaster.sendTransform(t);
 
- t.header.frame_id = "odom";
- t.child_frame_id = "base_link";
-  
-  t.transform.translation.x = x;
-  t.transform.translation.y = y;
-  
-  t.transform.rotation = tf::createQuaternionFromYaw(theta);
-  t.header.stamp = nh.now();
-  
-  broadcaster.sendTransform(t);
+    odom.header.stamp = nh.now();;
+    odom.header.frame_id = "odom";
+    odom.child_frame_id = "base_footprint";
+    odom.pose.pose.position.x = x;
+    odom.pose.pose.position.y = y;
+    odom.pose.pose.position.z = 0.0;
+    odom.pose.pose.orientation =tf::createQuaternionFromYaw(theta);;
+    odom.twist.twist.linear.x = vxi;
+    odom.twist.twist.linear.y = vyi;
+    odom.twist.twist.angular.z = omegai;
+    odom_pub.publish(&odom);
 
-  
-  odom.header.stamp = nh.now();;
-  odom.header.frame_id = "odom";
-  odom.pose.pose.position.x = x;
-  odom.pose.pose.position.y = y;
-  odom.pose.pose.position.z = 0.0;
-  odom.pose.pose.orientation =tf::createQuaternionFromYaw(theta);;
-
-  odom.child_frame_id = "base_link";
-  //odom.twist.twist.linear.x = vxi;
-  //odom.twist.twist.linear.y = vyi;
-  //odom.twist.twist.angular.z = omegai;
-
-  odom_pub.publish(&odom);
-
-
-  if((millis()-lastctrl)>1000*ctrlrate){
-    STOP();
-  }
-  nh.spinOnce();
+    if((millis()-lastctrl)>1000*ctrlrate){
+      STOP();
+    }
+    nh.spinOnce();
   #endif
- 
 }
