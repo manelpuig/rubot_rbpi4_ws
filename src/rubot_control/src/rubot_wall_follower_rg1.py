@@ -20,14 +20,16 @@ regions_ = {
 }
 state_ = 0
 find=0 
+distance=0
+s_factor=0
 state_dict_ = {
     0: 'find the wall',
     1: 'turn left',
     2: 'follow the wall',
     3: 'follow corner',
     4: 'left_correction',
-    5: 'unknown',
-    6: 'right_correction',
+    5: 'right_correction',
+    6: 'stop',
 }
 
 isScanRangesLengthCorrectionFactorCalculated = False
@@ -44,7 +46,7 @@ def clbk_laser(msg):
             scanRangesLengthCorrectionFactor = int(len(msg.ranges) / 360)
             isScanRangesLengthCorrectionFactorCalculated = True
             
-    rospy.loginfo("Scan Ranges correction %5.2f we have,%5.2f points.",scanRangesLengthCorrectionFactor, len(msg.ranges))
+    #rospy.loginfo("Scan Ranges correction %5.2f we have,%5.2f points.",scanRangesLengthCorrectionFactor, len(msg.ranges))
         
             
     bright_min = 60 * scanRangesLengthCorrectionFactor
@@ -64,9 +66,9 @@ def clbk_laser(msg):
         'bright':   min(min(msg.ranges[bright_min:bright_max]), 3),
     }
     print ("front distance: "+ str(regions_["front"]))
-    print ("front-right distance: "+ str(regions_["fright"]))
+    #print ("front-right distance: "+ str(regions_["fright"]))
     print ("right distance: "+ str(regions_["right"]))
-    print ("back-right distance: "+ str(regions_["bright"]))
+    #print ("back-right distance: "+ str(regions_["bright"]))
 
     take_action()
 
@@ -81,14 +83,16 @@ def change_state(state):
 def take_action():
     global regions_
     global find
+    global distance
     regions = regions_
     msg = Twist()
     linear_x = 0
     angular_z = 0
 
     state_description = ''
-
-    d = 0.6
+    d=distance
+   	
+    #d = 0.6
 	# Buscando la pared
     if regions['front'] > d and regions['fright'] > (d) and regions['bright'] > d and find==0:
         state_description = 'case 0 - find wall'
@@ -118,42 +122,25 @@ def take_action():
         change_state(4)
     elif regions['right'] > (d/1.1) and find==2:
         state_description = 'case 6 - following- correccion turn right'
-        change_state(6) 
+        change_state(5) 
            
     elif regions['right'] < (d) and find==2:
         state_description = 'case 7 - following- straing on '
         change_state(2)
           
-        
-    #elif regions['front'] > d and regions['right'] > d:
-    #    state_description = 'case 5 - right too far'
-    #    change_state(3)    
-    #elif regions['front'] > d and regions['bright'] > d and regions['fright'] < (d+0.6):
-    #    state_description = 'case 5 - close fright'
-    #    change_state(3)
     else:
-        state_description = 'unknown case'
-        change_state(5)
-        rospy.loginfo('unknown case')
+        state_description = 'stop case'
+        change_state(6)
+        rospy.loginfo('stop case')
 
 
 def find_wall():
+
+    global s_factor
     msg = Twist()
-    msg.linear.x = 0.2
+    msg.linear.x = (0.2)
     msg.angular.z = 0
     return msg
-
-def left_correction():
-    msg = Twist()    
-    msg.linear.x = 0.2
-    msg.angular.z = 0.2
-    return msg
-    
-def right_correction():
-    msg = Twist()    
-    msg.linear.x = 0.2
-    msg.angular.z = -0.2
-    return msg	
 
 def turn_left():
     msg = Twist()
@@ -161,6 +148,17 @@ def turn_left():
     msg.angular.z = 0.3
     return msg
 
+def left_correction():
+    msg = Twist()    
+    msg.linear.x = 0.2
+    msg.angular.z = 0.4  #0.2
+    return msg
+    
+def right_correction():
+    msg = Twist()    
+    msg.linear.x = 0.2
+    msg.angular.z = -0.4  #-0.2
+    return msg	
 
 def follow_the_wall():
     global regions_
@@ -169,13 +167,7 @@ def follow_the_wall():
     msg.angular.z = 0
     return msg
 
-def follow_corner():
-    msg = Twist()
-    msg.linear.x = 0.2
-    msg.angular.z = -0.5
-    return msg
-
-def unknown():
+def stop():
     msg = Twist()
     msg.linear.x = 0
     msg.angular.z = 0
@@ -185,6 +177,8 @@ def main():
     global pub_
     global isScanRangesLengthCorrectionFactorCalculated
     global scanRangesLengthCorrectionFactor
+    global distance
+    global s_factor
     #rostopic pub /rest_odom std_msgs/Bool "data: True"
     
 
@@ -195,8 +189,11 @@ def main():
     
     z=Bool()
     reset=rospy.Publisher('/rest_odom', Bool, queue_size=1)
-    z="True"
+    z.data=True
     reset.publish(z)
+        
+    distance= rospy.get_param("~distance_laser")
+    s_factor = rospy.get_param("~speed_factor")
     
     rate = rospy.Rate(20)
     while not rospy.is_shutdown():
@@ -211,12 +208,9 @@ def main():
         elif state_== 4:
             msg = left_correction()
         elif state_== 5:
-            msg = unknown()            
+            msg = right_correction()            
         elif state_== 6:
-            msg = right_correction()
-        elif state_ == 3:
-            msg = follow_corner()
-            pass
+            msg = stop()
         else:
             rospy.logerr('Unknown state!')
 
@@ -224,24 +218,11 @@ def main():
         rate.sleep()
         
 
-    change_state(5)
-    pub_.publish(msg)
-    rate = rospy.Rate(500)    
+    change_state(6)
+    pub_.publish(msg) 
     rate.sleep()    
             
-    change_state(5)
-    pub_.publish(msg)
-    rate.sleep()    
-        
-    change_state(5)
-    pub_.publish(msg)
-    rate.sleep()    
-        
-    change_state(5)
-    pub_.publish(msg)
-    rate.sleep()    
-        
-	
+
 
 if __name__ == '__main__':
     main()

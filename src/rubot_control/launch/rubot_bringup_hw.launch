@@ -1,6 +1,6 @@
 <launch>
     <arg name="model" default="rubot_rp.urdf" />
-  <!-- spawn nexus -->
+  <!-- spawn rubot -->
     <param name="robot_description" textfile="$(find rubot_mecanum_description)/urdf/$(arg model)" />
   <!-- send joint values -->
     <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
@@ -18,8 +18,8 @@
   <!-- launch ydlidar   -->
     <include file="$(find rplidar_ros)/launch/rplidar.launch"/>
   <!-- launch raspicam   -->
-    <include file="$(find raspicam_node)/launch/camerav2_1280x960_10fps.launch">
+    <include file="$(find raspicam_node)/launch/camera_640x480.launch">
     <arg name="enable_raw" value="true"/>
-    <arg name="camera_frame_id" value="base_scan"/>
+    <arg name="camera_frame_id" value="camera"/>
     </include>
 </launch>

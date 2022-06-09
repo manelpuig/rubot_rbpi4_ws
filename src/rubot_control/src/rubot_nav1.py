@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import math
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 import rospy
@@ -20,7 +20,7 @@ def odom_callback(data):
     rospy.loginfo("Robot Odometry y= %f\n",robot_y)
     rospy.loginfo("Robot Odometry yaw= %.0f\n",math.degrees(yaw))
 	
-def move_rubot(lin_velx,lin_vely,ang_vel,distance):
+def move_rubot(lin_velx,lin_vely,ang_vel,distance,time_duration):
     global robot_x
     global robot_y
     global robot_f
@@ -28,6 +28,7 @@ def move_rubot(lin_velx,lin_vely,ang_vel,distance):
     rospy.Subscriber('/odom',Odometry, odom_callback)
     rate = rospy.Rate(10) # 10hz
     vel = Twist()
+    time_begin = rospy.Time.now()
     while not rospy.is_shutdown():
         vel.linear.x = 0.0
         vel.linear.y = 0.0
@@ -35,8 +36,12 @@ def move_rubot(lin_velx,lin_vely,ang_vel,distance):
         vel.angular.x = 0.0
         vel.angular.y = 0.0
         vel.angular.z = 0.0
-        
-        if(robot_x <= distance):
+        time_end = rospy.Time.now()
+        duration = time_end - time_begin
+        duration_s = duration.to_sec()
+        rospy.loginfo("Time duration " + str(duration.to_sec()) + " secs" + " from " + str(time_duration))
+        rospy.loginfo("Distance " + str(distance))
+        if (duration_s <= time_duration):
             rospy.loginfo("Robot running")
             rospy.loginfo("Linear Vel_x = %f: Linear Vel_y = %f: Angular Vel = %f",lin_velx,lin_vely,ang_vel)
             vel.linear.x = lin_velx
@@ -60,6 +65,7 @@ if __name__ == '__main__':
         vy= rospy.get_param("~vy")
         w= rospy.get_param("~w")
         d= rospy.get_param("~d")
-        move_rubot(vx,vy,w,d)
+        td= rospy.get_param("~td")
+        move_rubot(vx,vy,w,d,td)
     except rospy.ROSInterruptException:
         pass
